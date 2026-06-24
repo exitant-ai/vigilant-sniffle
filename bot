@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>무한순환 봇 · QQQ 시뮬레이션</title>
+<style>
+:root{
+  --bg:#000000; --bg2:#04130c; --panel:#0a1610; --panel2:#0d1d14;
+  --line:#1a3326; --line2:#26402f;
+  --neon:#00ff9d; --neon-dim:#0ac77a; --neon-deep:#063d28;
+  --ink:#e8fff5; --muted:#5f8a76; --muted2:#3d5f50;
+  --red:#ff5c5c; --red-deep:#3d0f0f; --gold:#d4af37; --blue:#3aa0ff; --amber:#e0a23a;
+  --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Pretendard',sans-serif;
+  line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(0,255,157,.14), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 0%, rgba(0,255,157,.05), transparent 60%),
+    linear-gradient(180deg,#000 0%,#03100a 55%,#051c12 100%);
+  background-attachment:fixed;padding:18px 12px 40px;
+}
+.wrap{max-width:460px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:14px}
+.brand .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--neon),var(--neon-dim));
+  display:flex;align-items:center;justify-content:center;color:#031;font-weight:900;font-size:16px;
+  box-shadow:0 0 22px rgba(0,255,157,.4)}
+.brand b{font-family:var(--mono);letter-spacing:.06em;font-size:15px}
+.brand b .x{color:var(--neon)}
+.brand .tag{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em}
+
+/* ticker */
+.ticker{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:10px}
+.ticker .sym{font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:.04em}
+.ticker .sym small{color:var(--muted);font-weight:500;font-size:10px;margin-left:5px}
+.ticker .px{font-family:var(--mono);font-size:22px;font-weight:800}
+.ticker .chg{font-family:var(--mono);font-size:12px;font-weight:700}
+.ticker .day{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.up{color:var(--neon)}.dn{color:var(--red)}
+
+/* phone / chat */
+.tg{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 10px 50px rgba(0,0,0,.6)}
+.tg-hd{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--panel2);
+  border-bottom:1px solid var(--line)}
+.tg-av{width:38px;height:38px;border-radius:50%;background:var(--neon-deep);border:1px solid var(--neon-dim);
+  display:flex;align-items:center;justify-content:center;font-size:19px}
+.tg-hd .nm{font-size:14px;font-weight:700}
+.tg-hd .st{font-size:11px;color:var(--neon-dim)}
+.tg-hd .st .blip{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--neon);
+  margin-right:5px;box-shadow:0 0 6px var(--neon);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.tg-body{padding:14px 12px;display:flex;flex-direction:column;gap:9px;height:50vh;min-height:340px;
+  overflow-y:auto;scroll-behavior:smooth}
+.tg-body::-webkit-scrollbar{width:5px}.tg-body::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.b{max-width:92%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.62;
+  white-space:pre-wrap;word-break:break-word;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:4px}
+.usr{align-self:flex-end;background:var(--neon-deep);border:1px solid var(--neon-dim);color:var(--ink);
+  border-bottom-right-radius:4px;font-family:var(--mono);font-size:12px}
+.sys{align-self:center;max-width:94%;background:rgba(255,255,255,.03);border:1px dashed var(--line2);
+  font-size:11px;color:var(--muted);border-radius:10px;text-align:center}
+.div{align-self:center;font-size:10.5px;color:var(--muted);background:rgba(0,255,157,.06);
+  padding:3px 13px;border-radius:10px;margin:4px 0;font-family:var(--mono);letter-spacing:.08em}
+.hd{font-weight:800;font-size:13px;display:block;margin-bottom:3px;color:var(--neon)}
+.tm{font-size:10px;color:var(--muted2);margin-top:4px;font-family:var(--mono)}
+.buy{border-left:3px solid var(--blue)}
+.store{border-left:3px solid var(--amber)}
+.inj{border-left:3px solid var(--neon)}
+.lab{color:var(--muted)}
+.mono{font-family:var(--mono)}
+.pos{color:var(--neon);font-weight:700}.neg{color:var(--red);font-weight:700}
+
+/* status card */
+.totbox{border:1px solid var(--line2);border-radius:10px;padding:9px 11px;margin-top:6px;
+  background:rgba(0,255,157,.04);font-size:12px;line-height:1.7}
+.totbox b.big{font-size:15px}
+.acct{display:flex;gap:8px;margin:8px 0 2px}
+.acc{flex:1;border-radius:9px;padding:7px 9px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+.acc .l{font-size:10px;color:var(--muted)}
+.acc .v{font-size:14px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.acc.t{border-left:3px solid var(--blue)}.acc.f{border-left:3px solid var(--amber)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:7px;font-size:12px;font-family:var(--mono)}
+.grid2 .k{color:var(--muted);font-family:-apple-system,sans-serif}
+
+/* controls */
+.ctrl{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:7px;flex-wrap:wrap}
+button{font-family:var(--mono);font-size:12.5px;font-weight:700;cursor:pointer;border:none;
+  border-radius:11px;padding:11px 12px;transition:.12s;letter-spacing:.02em}
+button:active{transform:scale(.96)}
+.btn{flex:1;background:var(--panel2);color:var(--ink);border:1px solid var(--line2)}
+.btn:hover{border-color:var(--neon-dim)}
+.btn.primary{background:linear-gradient(135deg,var(--neon),var(--neon-dim));color:#031;border:none;
+  box-shadow:0 4px 18px rgba(0,255,157,.28)}
+.btn.warn{color:var(--red);border-color:#5a2222}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn small{font-weight:500;opacity:.7}
+.note{font-size:10.5px;color:var(--muted2);text-align:center;font-family:var(--mono);line-height:1.6;margin-top:4px}
+.flag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:7px;font-family:var(--mono);
+  background:rgba(0,255,157,.1);color:var(--neon-dim);margin-left:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <div class="dot">∞</div>
+    <b>INFINITE<span class="x">CYCLE</span></b>
+    <span class="tag">QQQ · DEMO SIM</span>
+  </div>
+
+  <div class="ticker">
+    <div>
+      <div class="sym">QQQ <small>나스닥100 ETF · 3배</small></div>
+      <div class="day" id="dayLbl">Day 0</div>
+    </div>
+    <div style="text-align:right">
+      <div class="px" id="pxLbl">400.00 USD</div>
+      <div class="chg" id="chgLbl">—</div>
+    </div>
+  </div>
+
+  <div class="tg">
+    <div class="tg-hd">
+      <div class="tg-av">🤖</div>
+      <div>
+        <div class="nm">무한순환 봇 · QQQ</div>
+        <div class="st"><span class="blip"></span>Render 24시간 · 데모 모드</div>
+      </div>
+    </div>
+    <div class="tg-body" id="chat"></div>
+  </div>
+
+  <div class="ctrl">
+    <div class="row">
+      <button class="btn primary" id="nextBtn">▶ 다음날</button>
+      <button class="btn" id="autoBtn">⏩ 자동재생</button>
+      <button class="btn" id="statusBtn">📊 현황</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="skipBtn">⏭ 5일</button>
+      <button class="btn ghost" id="restartBtn">🔄 재시작</button>
+      <button class="btn warn" id="resetBtn">초기화</button>
+    </div>
+    <div class="note">
+      매일 자동 분할매수 · 평단가 대비 등락에 따라 보관/투입 자동 실행 · 단일 포지션(중복투자 없음)<br>
+      모든 상태는 브라우저에 저장됩니다 — 새로고침·재시작해도 이어서 진행
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 무한순환 전략 시뮬레이터 ===================== */
+const KEY = 'infinite_cycle_qqq_sim_v1';
+
+const CFG = {
+  total: 1000,        // 총 계좌 (USD)
+  lev: 3,             // 레버리지 (실질 3배)
+  entryUp: 1,         // 상승일 진입 % (운용자산 대비)
+  entryDn: 3,         // 하락일 진입 %
+  storeUp: 10,        // 보관 발동: 평단가 대비 +10%
+  storePct: 10,       // 보관 시 트레이딩의 10% → 펀딩
+  injDn: 15,          // 투입 발동: 직전 보관/고점 대비 -15%
+  injPct: 50,         // 투입 시 펀딩의 50% → 트레이딩
+  startPx: 400,       // QQQ 시작가
+  maxDeploy: 0.04     // 한 종목 일일 최대 투입 비중 안전장치
+};
+
+let S = null;
+
+/* ---------- 상태 초기화 ---------- */
+function fresh(){
+  return {
+    day: 0,
+    px: CFG.startPx,
+    prevPx: CFG.startPx,
+    seed: Math.round(Math.random()*1e9), // 가격 난수 시드
+    funding: CFG.total,   // 펀딩(현금) 계좌
+    margin: 0,            // 트레이딩 투입 증거금
+    qty: 0,              // 보유 수량(레버리지 노셔널 단위)
+    avg: 0,              // 평단가
+    base: CFG.startPx,    // 보관 기준선(평단가 기준 갱신)
+    high: CFG.startPx,    // 직전 고점(투입 기준)
+    realized: 0,         // 확정 손익
+    lastStorePx: null,    // 마지막 보관 시점 QQQ 가격
+    lastInjPx: null,      // 마지막 투입 시점 QQQ 가격
+    storeCnt: 0, injCnt: 0,
+    started: false,
+    log: []              // 채팅 로그(재시작 복구용)
+  };
+}
+
+/* ---------- 저장 / 불러오기 ---------- */
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+function load(){
+  try{ const r = localStorage.getItem(KEY); return r? JSON.parse(r): null; }catch(e){ return null; }
+}
+
+/* ---------- 결정적 난수(시드) : 같은 시드면 같은 경로 ---------- */
+function rng(n){
+  // mulberry32
+  let t = (S.seed + n*0x6D2B79F5) >>> 0;
+  t = Math.imul(t ^ (t>>>15), t|1);
+  t ^= t + Math.imul(t ^ (t>>>7), t|61);
+  return ((t ^ (t>>>14))>>>0)/4294967296;
+}
+
+/* ===================== 포지션 계산 ===================== */
+function posValue(){ return S.qty * S.px; }              // 현재 노셔널 평가액
+function costBasis(){ return S.qty * S.avg; }
+function uPnL(){ return S.qty * (S.px - S.avg); }         // 미실현 손익
+function tradingEquity(){ return S.margin + uPnL(); }    // 트레이딩 계좌 평가액
+function totalAssets(){ return S.funding + tradingEquity(); }
+
+/* ---------- 매수(분할/투입 공용) : marginAmt 만큼 증거금 투입 ---------- */
+function buy(marginAmt){
+  if(marginAmt <= 0 || S.funding < 0.01) return 0;
+  marginAmt = Math.min(marginAmt, S.funding);
+  const notional = marginAmt * CFG.lev;
+  const addQty = notional / S.px;
+  const newQty = S.qty + addQty;
+  S.avg = newQty>0 ? (costBasis() + notional) / newQty : S.px;
+  S.qty = newQty;
+  S.funding -= marginAmt;
+  S.margin  += marginAmt;
+  return marginAmt;
+}
+
+/* ---------- 보관 : 트레이딩 평가액의 storePct% 를 펀딩으로 (부분 익절) ---------- */
+function store(){
+  if(S.qty <= 0) return 0;
+  const f = CFG.storePct/100;
+  const movedEquity = tradingEquity()*f;
+  const realizedPart = uPnL()*f;
+  S.qty    *= (1-f);
+  S.margin *= (1-f);
+  S.funding += movedEquity;
+  S.realized += realizedPart;
+  S.storeCnt++;
+  S.lastStorePx = S.px;
+  S.base = S.px;          // 기준선 갱신
+  if(S.px > S.high) S.high = S.px;
+  return movedEquity;
+}
+
+/* ---------- 투입 : 펀딩의 injPct% 를 트레이딩으로 매수 ---------- */
+function inject(){
+  const amt = S.funding * CFG.injPct/100;
+  const used = buy(amt);
+  if(used>0){ S.injCnt++; S.lastInjPx = S.px; S.base = S.px; }
+  return used;
+}
+
+/* ===================== 하루 진행 ===================== */
+function step(){
+  S.day++;
+  S.prevPx = S.px;
+  // 가격: 결정적 랜덤워크(약한 상승 드리프트)
+  const r = rng(S.day);
+  const drift = 0.0012, vol = 0.022;
+  let chg = drift + (r-0.5)*2*vol;
+  S.px = Math.max(40, +(S.px*(1+chg)).toFixed(2));
+
+  const isUp = S.px >= S.prevPx;
+  const msgs = [];
+
+  // 1) 매일 분할매수 (운용자산 대비 %)
+  const pct = (isUp? CFG.entryUp: CFG.entryDn)/100;
+  const baseAmt = totalAssets()*pct;
+  const used = buy(baseAmt);
+  if(used>0.01){
+    msgs.push({cls:'buy', icon:'🟦',
+      txt:`[QQQ] ${isUp?'상승일':'하락일'} 분할매수 · <b>${fmt(used)} USD</b> 투입(증거금)\n현재가 <b>${S.px.toFixed(2)} USD</b> · 평단가 <b>${S.avg.toFixed(2)} USD</b> · 노셔널 ${fmt(posValue())} USD`});
+  }
+
+  // 2) 보관 체크: 평단가 대비 +storeUp%
+  if(S.avg>0 && S.px >= S.avg*(1+CFG.storeUp/100) && S.px >= S.base*(1+CFG.storeUp/100)){
+    const moved = store();
+    msgs.push({cls:'store', icon:'🟧',
+      txt:`<span class="up">▲ 보관 실행 (평단가 +${CFG.storeUp}% 도달)</span>\n현재가 <b>${S.px.toFixed(2)} USD</b> · 트레이딩의 ${CFG.storePct}% = <b>${fmt(moved)} USD</b> → 펀딩(현금)\n확정익절 누적 <span class="pos">+${fmt(S.realized)} USD</span> · 기준가 갱신 ${S.px.toFixed(2)} USD`});
+  }
+
+  // 3) 투입 체크: 고점 대비 -injDn%
+  if(S.px > S.high) S.high = S.px;
+  if(S.high>0 && S.px <= S.high*(1-CFG.injDn/100) && S.funding > 1){
+    const used2 = inject();
+    if(used2>0){
+      msgs.push({cls:'inj', icon:'🟩',
+        txt:`<span class="dn">▼ 투입 실행 (고점 −${CFG.injDn}% 하락)</span>\n현재가 <b>${S.px.toFixed(2)} USD</b> · 펀딩의 ${CFG.injPct}% = <b>${fmt(used2)} USD</b> → 트레이딩\n평단가 <b>${S.avg.toFixed(2)} USD</b>로 낮춤 · 기준가 ${S.px.toFixed(2)} USD`});
+      S.high = S.px;
+    }
+  }
+
+  // 출력
+  msgs.forEach(m=> botMsg(m.txt, m.cls));
+  // 7일마다 자동 현황
+  if(S.day % 7 === 0) statusMsg('일일');
+  updTicker();
+  save();
+}
+
+/* ===================== 출력 헬퍼 ===================== */
+function fmt(n){ return (Math.round(n*10)/10).toFixed(1); }
+function nowTime(){ const d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function dayTag(){ return 'Day '+S.day; }
+
+function pushLog(html, cls){ S.log.push({html, cls}); if(S.log.length>400) S.log.shift(); }
+
+function render(html, cls){
+  const chat = document.getElementById('chat');
+  const el = document.createElement('div');
+  el.className = 'b '+cls;
+  el.innerHTML = html;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+function botMsg(txt, extra){
+  const html = txt + `<div class="tm">${dayTag()} · ${nowTime()}</div>`;
+  const cls = 'bot '+(extra||'');
+  pushLog(html, cls); render(html, cls); save();
+}
+function usrMsg(txt){ const html=`<span class="mono">${txt}</span>`; pushLog(html,'usr'); render(html,'usr'); }
+function sysMsg(txt){ pushLog(txt,'sys'); render(txt,'sys'); }
+function divMsg(txt){ pushLog(txt,'div'); render(txt,'div'); }
+
+/* ---------- 현황 카드 ---------- */
+function statusCard(){
+  const pnl = uPnL();
+  const pnlPct = S.avg>0 ? (S.px/S.avg-1)*100 : 0;
+  const held = S.qty>0;
+  return `<div class="totbox"><b class="big">총자산 ${fmt(totalAssets())} USD</b>
+<span class="lab">(초기 ${CFG.total.toFixed(1)} · 확정손익 <span class="${S.realized>=0?'pos':'neg'}">${S.realized>=0?'+':''}${fmt(S.realized)}</span> · 평가손익 <span class="${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmt(pnl)}</span>)</span></div>
+<div class="acct">
+  <div class="acc t"><div class="l">트레이딩 계좌</div><div class="v">${fmt(tradingEquity())} USD</div></div>
+  <div class="acc f"><div class="l">펀딩 계좌(금고)</div><div class="v">${fmt(S.funding)} USD</div></div>
+</div>
+<div class="grid2">
+  <div class="k">포지션</div><div>${held?`보유 · 노셔널 ${fmt(posValue())} USD`:'없음(대기)'}</div>
+  <div class="k">평단가</div><div>${held?S.avg.toFixed(2)+' USD':'—'}</div>
+  <div class="k">현재가</div><div>${S.px.toFixed(2)} USD</div>
+  <div class="k">포지션 PnL</div><div class="${pnl>=0?'pos':'neg'}">${held?`${pnl>=0?'+':''}${fmt(pnl)} USD (${pnlPct>=0?'+':''}${pnlPct.toFixed(1)}%)`:'—'}</div>
+  <div class="k">확정 익손실</div><div class="${S.realized>=0?'pos':'neg'}">${S.realized>=0?'+':''}${fmt(S.realized)} USD</div>
+  <div class="k">마지막 보관가</div><div>${S.lastStorePx?S.lastStorePx.toFixed(2)+' USD'+` <span class="flag">${S.storeCnt}회</span>`:'—'}</div>
+  <div class="k">마지막 투입가</div><div>${S.lastInjPx?S.lastInjPx.toFixed(2)+' USD'+` <span class="flag">${S.injCnt}회</span>`:'—'}</div>
+</div>`;
+}
+function statusMsg(kind){
+  const head = kind==='재시작'
+    ? `<span class="hd">🔄 재시작 현황 · QQQ</span>선택: QQQ(나스닥100) · 3배 · 상승${CFG.entryUp}%/하락${CFG.entryDn}% · 보관+${CFG.storeUp}%→${CFG.storePct}% · 투입−${CFG.injDn}%→${CFG.injPct}%`
+    : `<span class="hd">📅 ${kind} 현황 · ${dayTag()}</span>`;
+  botMsg(head + statusCard());
+}
+
+/* ---------- 티커 ---------- */
+function updTicker(){
+  document.getElementById('pxLbl').textContent = S.px.toFixed(2)+' USD';
+  document.getElementById('dayLbl').textContent = 'Day '+S.day;
+  const d = S.px - S.prevPx, p = S.prevPx? d/S.prevPx*100:0;
+  const c = document.getElementById('chgLbl');
+  c.textContent = (d>=0?'▲ +':'▼ ')+d.toFixed(2)+' ('+(p>=0?'+':'')+p.toFixed(2)+'%)';
+  c.className = 'chg '+(d>=0?'up':'dn');
+}
+
+/* ===================== 초기 구동 ===================== */
+function bootSetup(){
+  divMsg('① 설정');
+  usrMsg('/start');
+  botMsg(`<span class="hd">∞ 무한순환 봇 설정</span>총 계좌 <b>1,000 USD</b> · 단일 종목 <b>QQQ(나스닥100 ETF)</b> · 중복투자 없음.`);
+  botMsg(`<span class="hd">📋 설정 요약</span>· 종목 <b>QQQ</b> · 레버리지 <b>${CFG.lev}배</b>(실질)
+· 분할매수 상승일 <b>${CFG.entryUp}%</b> / 하락일 <b>${CFG.entryDn}%</b> (운용자산 대비)
+· 보관 평단가 <b>+${CFG.storeUp}%</b>마다 트레이딩 <b>${CFG.storePct}%</b> → 펀딩
+· 투입 고점 <b>−${CFG.injDn}%</b>마다 펀딩 <b>${CFG.injPct}%</b> → 트레이딩`);
+  divMsg('② 구동 시작 — "다음날"을 눌러 진행');
+  S.started = true;
+  statusMsg('초기');
+  updTicker();
+  save();
+}
+
+/* ---------- 재시작 복구 ---------- */
+function replayLog(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  S.log.forEach(m=> render(m.html, m.cls));
+}
+
+/* ===================== 컨트롤 ===================== */
+let auto = null;
+function stopAuto(){ if(auto){ clearInterval(auto); auto=null; document.getElementById('autoBtn').textContent='⏩ 자동재생'; } }
+
+document.getElementById('nextBtn').onclick = ()=>{ stopAuto(); step(); };
+document.getElementById('skipBtn').onclick = ()=>{ stopAuto(); for(let i=0;i<5;i++) step(); };
+document.getElementById('statusBtn').onclick = ()=>{ usrMsg('/현황'); statusMsg('요청'); };
+document.getElementById('autoBtn').onclick = ()=>{
+  if(auto){ stopAuto(); return; }
+  document.getElementById('autoBtn').textContent='⏸ 정지';
+  auto = setInterval(step, 700);
+};
+document.getElementById('restartBtn').onclick = ()=>{
+  stopAuto();
+  const saved = load();
+  if(!saved){ alert('저장된 데이터가 없습니다.'); return; }
+  S = saved;
+  replayLog();
+  sysMsg('☁️ Render 재시작 → 저장 상태 로드 → 아래 현황 발송 후 이어서 구동');
+  statusMsg('재시작');
+  sysMsg('✓ 잔고·평단가·기준가·확정손익 그대로 복구 → 끊김 없이 재개');
+  updTicker();
+  save();
+};
+document.getElementById('resetBtn').onclick = ()=>{
+  if(!confirm('모든 데이터를 지우고 처음부터 시작할까요?')) return;
+  stopAuto();
+  localStorage.removeItem(KEY);
+  S = fresh();
+  document.getElementById('chat').innerHTML='';
+  bootSetup();
+};
+
+/* ===================== 시작 ===================== */
+(function init(){
+  const saved = load();
+  if(saved && saved.started){
+    S = saved;
+    replayLog();
+    divMsg('— 저장된 세션 복구됨 —');
+    statusMsg('재시작');
+    sysMsg('✓ 이전 상태에서 이어서 진행합니다. "다음날"을 누르세요.');
+    updTicker();
+  }else{
+    S = fresh();
+    bootSetup();
+  }
+})();
+</script>
+</body>
+</html>
