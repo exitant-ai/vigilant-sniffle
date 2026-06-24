@@ -354,18 +354,18 @@ function renderCal(){
     const di=mk(calY,calM,d);
     const dis = di<dMin||di>dMax;
     let cls='day'; if(dis)cls+=' dis'; else{ if(di===sel)cls+=' sel'; else if(lo&&hi&&di>lo&&di<hi)cls+=' inrange'; }
-    cells+=`<div class="${cls}" ${dis?'':`onclick="pickDay(${di})"`}>${d}</div>`;
+    cells+=`<div class="${cls}" ${dis?'':`data-d="${di}"`}>${d}</div>`;
   }
   $('calBox').innerHTML=`<div class="cal">
     <div class="cal-which">${calWhich==='start'?'시작일':'종료일'} 선택</div>
     <div class="cal-hd">
-      <button onclick="calStep(-1)">‹</button>
-      <select onchange="calY=+this.value;renderCal()">${yrs}</select>
-      <select onchange="calM=+this.value;renderCal()">${mos}</select>
-      <button onclick="calStep(1)">›</button>
+      <button data-nav="-1">‹</button>
+      <select id="calYsel">${yrs}</select>
+      <select id="calMsel">${mos}</select>
+      <button data-nav="1">›</button>
     </div>
     <div class="cal-grid">${cells}</div>
-    <button class="cal-close" onclick="closeCal()">닫기</button>
+    <button class="cal-close" data-close="1">닫기</button>
   </div>`;
 }
 function calStep(d){ calM+=d; if(calM<1){calM=12;calY--;} if(calM>12){calM=1;calY++;} renderCal(); }
@@ -380,6 +380,16 @@ function pickDay(di){
 function closeCal(){ calWhich=null; $('calBox').innerHTML=''; updateDateDisplay(); }
 $('d0btn').addEventListener('click',()=>openCal('start'));
 $('d1btn').addEventListener('click',()=>openCal('end'));
+$('calBox').addEventListener('click',e=>{
+  const t=e.target; if(!t.closest)return;
+  const day=t.closest('.day'); if(day&&day.dataset.d){pickDay(+day.dataset.d);return;}
+  const nav=t.closest('[data-nav]'); if(nav){calStep(+nav.dataset.nav);return;}
+  if(t.closest('[data-close]')){closeCal();return;}
+});
+$('calBox').addEventListener('change',e=>{
+  if(e.target.id==='calYsel'){calY=+e.target.value;renderCal();}
+  else if(e.target.id==='calMsel'){calM=+e.target.value;renderCal();}
+});
 /* 빠른 선택: 종료일=데이터 마지막, 시작일=N년 전(0=전체) */
 $('rangePresets').addEventListener('click',e=>{
   const c=e.target.closest('.chip'); if(!c)return;
@@ -671,7 +681,7 @@ function playOnboarding(){
 /* ---------- 컨트롤 ---------- */
 function stopAuto(){if(auto){clearInterval(auto);auto=null;$('autoBtn').textContent='자동재생';}}
 function startAuto(){if(auto||playing||(S&&S.done))return;$('autoBtn').textContent='⏸ 정지';auto=setInterval(step,300);}
-$('runBtn').onclick=()=>{S=fresh(buildConfig());showSim();boot();};
+$('runBtn').onclick=()=>{try{S=fresh(buildConfig());showSim();boot();}catch(err){alert('구동 오류: '+err.message);console.error(err);}};
 $('nextBtn').onclick=()=>{if(playing)return;stopAuto();step();};
 $('skip20').onclick=()=>{if(playing)return;stopAuto();for(let i=0;i<20&&!S.done;i++)step();};
 $('skip100').onclick=()=>{if(playing)return;stopAuto();for(let i=0;i<100&&!S.done;i++)step();};
